@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Brand } from '@/components/brand';
 import { getPublicContact } from '@/lib/config';
+import { isWhatsAppConfigured } from '@/lib/whatsapp';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Privacy',
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 };
 export default function Privacy() {
   const { email } = getPublicContact();
+  const enquiriesEnabled = isWhatsAppConfigured();
   return (
     <>
       <header className="container privacy-nav">
@@ -31,11 +33,10 @@ export default function Privacy() {
         </p>
         <h2>How it is used</h2>
         <p>
-          When online enquiries are enabled, submissions are sent securely to
-          our configured n8n workflow so we can review and respond to your
-          request. A submission identifier and timestamp help process the
-          enquiry and avoid duplicate actions. We do not automatically add you
-          to a marketing list.
+          When online enquiries are enabled, submissions are sent through
+          Meta&apos;s WhatsApp Business Platform to our internal business
+          contact so we can review and respond to your request. We do not
+          automatically add you to a marketing list.
         </p>
         <h2>Website operations</h2>
         <p>
@@ -64,10 +65,9 @@ export default function Privacy() {
         </p>
         <h2>Launch information</h2>
         <p>
-          Online enquiry processing remains disabled until configured. Before
-          enabling it, this notice must be updated with the legal business
-          identity, a working privacy contact, actual processors and storage
-          locations, and retention periods that match the deployed workflow.
+          {enquiriesEnabled
+            ? 'Online enquiry notifications are enabled through the WhatsApp Business Platform. This notice still needs the legal business identity, a working privacy contact, and final retention details before a broader commercial launch.'
+            : 'Online enquiry processing remains disabled until the WhatsApp Business Platform is configured. Before enabling it, this notice must include the legal business identity, a working privacy contact, and final retention details.'}
         </p>
         <p>
           <Link href="/">← Back to FlowPilot</Link>

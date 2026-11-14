@@ -1,5 +1,6 @@
 import { CONTACT_LIMITS } from '@/lib/config';
 import { validateContact } from '@/lib/contact';
+import { isWhatsAppConfigured, sendEnquiryToWhatsApp } from '@/lib/whatsapp';
 export const runtime = 'nodejs';
 const respond = (message: string, status: number, extra = {}) =>
   Response.json({ message, ...extra }, { status });
@@ -33,33 +34,11 @@ export async function POST(request: Request) {
   if (!data)
     return respond('Please check the highlighted fields.', 400, { errors });
   if (data.website) return respond('Unable to accept this submission.', 400);
-  const endpoint = process.env.N8N_WEBHOOK_URL;
-  if (!endpoint) return respond('Online enquiries are not connected yet.', 503);
+  if (!isWhatsAppConfigured())
+    return respond('Online enquiries are not connected yet.', 503);
   try {
-    const url = new URL(endpoint);
-    if (url.protocol !== 'https:')
-      return respond('Online enquiries are temporarily unavailable.', 503);
-    const result = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.N8N_WEBHOOK_TOKEN
-          ? { Authorization: `Bearer ${process.env.N8N_WEBHOOK_TOKEN}` }
-          : {}),
-      },
-      body: JSON.stringify({
-        name: data.name,
-        email: data.email,
-        service: data.service,
-        description: data.description,
-        submissionId: data.submissionId,
-        submittedAt: new Date().toISOString(),
-        source: 'flowpilot-website',
-      }),
-      signal: AbortSignal.timeout(CONTACT_LIMITS.timeoutMs),
-      redirect: 'error',
-    });
-    if (!result.ok)
+    const delivered = await sendEnquiryToWhatsApp(data);
+    if (!delivered)
       return respond(
         'We could not confirm delivery. Please try again later or contact us directly.',
         502,

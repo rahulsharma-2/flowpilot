@@ -4,6 +4,11 @@ export const BRAND = {
   description:
     'Thoughtful websites, practical AI automation, and connected business systems. More room for what comes next.',
 } as const;
+
+export const SOCIAL_LINKS = {
+  instagram: 'https://www.instagram.com/flowpilot_automation/',
+} as const;
+
 export const CONTACT_LIMITS = {
   name: 100,
   email: 254,

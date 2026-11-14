@@ -2,7 +2,7 @@ import { Navigation } from '@/components/navigation';
 import { Brand } from '@/components/brand';
 import { Workflow } from '@/components/workflow';
 import { ContactForm } from '@/components/contact-form';
-import { BRAND, SERVICES, getPublicContact } from '@/lib/config';
+import { BRAND, SERVICES, SOCIAL_LINKS, getPublicContact } from '@/lib/config';
 import { FAQS, PROCESS, PROJECTS } from '@/lib/content';
 export const dynamic = 'force-dynamic';
 export default function Home() {
@@ -307,6 +307,39 @@ export default function Home() {
           <Brand />
           <p>Good ideas deserve better systems.</p>
           <div className="footer-links">
+            <a
+              className="social-link"
+              href={SOCIAL_LINKS.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow FlowPilot Automation on Instagram"
+            >
+              <svg
+                className="social-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <rect
+                  x="3"
+                  y="3"
+                  width="18"
+                  height="18"
+                  rx="5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="4.25"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                />
+                <circle cx="17.4" cy="6.7" r="1.1" fill="currentColor" />
+              </svg>
+              Instagram ↗
+            </a>
             {contact.linkedin && (
               <a
                 href={contact.linkedin}

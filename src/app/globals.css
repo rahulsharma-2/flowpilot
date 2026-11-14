@@ -81,18 +81,15 @@ button {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 23px;
-  font-weight: 600;
-  letter-spacing: -1px;
+  flex-shrink: 0;
 }
-.brand-sub {
+.brand-logo {
   display: block;
-  font-size: 8px;
-  font-weight: 400;
-  letter-spacing: 3.4px;
-  margin-top: 4px;
-  color: #bab8c3;
+  width: 178px;
+  height: auto;
+}
+.brand-logo-light {
+  display: none;
 }
 .desktop-nav {
   display: flex;
@@ -796,24 +793,28 @@ button:disabled {
   align-items: center;
   padding-bottom: 35px;
 }
-.footer-top .brand {
-  font-size: 18px;
-}
-.footer-top .brand svg {
-  width: 26px;
-}
-.footer-top .brand-sub {
-  font-size: 6px;
-  letter-spacing: 2.5px;
+.footer-top .brand-logo {
+  width: 154px;
 }
 .footer-top > p {
   font-size: 11px;
 }
 .footer-links {
   display: flex;
+  align-items: center;
   gap: 25px;
   font-size: 10px;
   color: #b7b0c3;
+}
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.social-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 .footer-bottom {
   display: flex;
@@ -945,7 +946,10 @@ button:disabled {
     height: 82px;
   }
   .brand {
-    font-size: 21px;
+    max-width: 160px;
+  }
+  .brand-logo {
+    width: 160px;
   }
   .desktop-nav,
   .nav-cta {
@@ -1285,7 +1289,12 @@ button:disabled {
 [data-theme='light'] .theme-moon {
   display: block;
 }
-[data-theme='light'] .brand-sub,
+[data-theme='light'] .brand-logo-dark {
+  display: none;
+}
+[data-theme='light'] .brand-logo-light {
+  display: block;
+}
 [data-theme='light'] .desktop-nav,
 [data-theme='light'] .footer-links {
   color: #675c76;

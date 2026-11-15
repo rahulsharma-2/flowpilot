@@ -11,27 +11,20 @@ const valid = {
   submissionId: '22e93ca0-1713-4a5e-8f34-57094bcd1526',
 };
 const originalFetch = globalThis.fetch;
-const whatsappEnvironment = [
-  'WHATSAPP_CLOUD_ACCESS_TOKEN',
-  'WHATSAPP_CLOUD_PHONE_NUMBER_ID',
-  'WHATSAPP_NOTIFICATION_RECIPIENT',
-  'WHATSAPP_TEMPLATE_NAME',
-  'WHATSAPP_TEMPLATE_LANGUAGE',
-  'WHATSAPP_GRAPH_API_VERSION',
+const deliveryEnvironment = [
+  'GOOGLE_APPS_SCRIPT_URL',
+  'GOOGLE_APPS_SCRIPT_SECRET',
 ] as const;
 
-const configureWhatsApp = () => {
-  process.env.WHATSAPP_CLOUD_ACCESS_TOKEN = 'test-secret';
-  process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID = '123456789';
-  process.env.WHATSAPP_NOTIFICATION_RECIPIENT = '919602730789';
-  process.env.WHATSAPP_TEMPLATE_NAME = 'new_flowpilot_enquiry';
-  process.env.WHATSAPP_TEMPLATE_LANGUAGE = 'en_US';
-  process.env.WHATSAPP_GRAPH_API_VERSION = 'v27.0';
+const configureDelivery = () => {
+  process.env.GOOGLE_APPS_SCRIPT_URL =
+    'https://script.google.com/macros/s/test-deployment_123/exec';
+  process.env.GOOGLE_APPS_SCRIPT_SECRET = 's'.repeat(32);
 };
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
-  for (const key of whatsappEnvironment) delete process.env[key];
+  for (const key of deliveryEnvironment) delete process.env[key];
 });
 const request = (body: unknown = valid, headers: Record<string, string> = {}) =>
   new Request('https://flowpilot.test/api/contact', {
@@ -109,45 +102,41 @@ test('rejects oversized request and honeypot', async () => {
     400,
   );
 });
-test('sends validated data to the configured WhatsApp template', async () => {
-  configureWhatsApp();
+test('sends validated data to the configured Google Apps Script', async () => {
+  configureDelivery();
   globalThis.fetch = async (url, options) => {
     assert.equal(
       String(url),
-      'https://graph.facebook.com/v27.0/123456789/messages',
-    );
-    assert.equal(
-      (options?.headers as Record<string, string>).Authorization,
-      'Bearer test-secret',
+      'https://script.google.com/macros/s/test-deployment_123/exec',
     );
     const body = JSON.parse(String(options?.body));
-    assert.equal(body.messaging_product, 'whatsapp');
-    assert.equal(body.to, '919602730789');
-    assert.equal(body.template.name, 'new_flowpilot_enquiry');
-    assert.deepEqual(
-      body.template.components[0].parameters.map(
-        (parameter: { text: string }) => parameter.text,
-      ),
-      [valid.name, valid.email, 'AI Automation', valid.description],
-    );
-    assert.ok(!String(options?.body).includes(valid.submissionId));
-    return Response.json({ messages: [{ id: 'wamid.test' }] });
+    assert.equal(body.secret, 's'.repeat(32));
+    assert.equal(body.submissionId, valid.submissionId);
+    assert.equal(body.name, valid.name);
+    assert.equal(body.email, valid.email);
+    assert.equal(body.service, 'AI Automation');
+    assert.equal(body.description, valid.description);
+    return Response.json({ ok: true });
   };
   assert.equal((await POST(request())).status, 200);
 });
-test('Meta failure and timeout never produce success or expose secrets', async () => {
-  configureWhatsApp();
+test('delivery failure and timeout never produce success or expose secrets', async () => {
+  configureDelivery();
   globalThis.fetch = async () => new Response(null, { status: 500 });
   assert.equal((await POST(request())).status, 502);
   globalThis.fetch = async () => {
-    throw new DOMException('secret Meta response', 'TimeoutError');
+    throw new DOMException('secret Google response', 'TimeoutError');
   };
   const response = await POST(request());
   assert.equal(response.status, 502);
-  assert.ok(!(await response.text()).includes('secret Meta'));
+  assert.ok(!(await response.text()).includes('secret Google'));
 });
-test('rejects invalid WhatsApp configuration', async () => {
-  configureWhatsApp();
-  process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID = 'not-a-phone-id';
+test('rejects invalid Google Apps Script configuration', async () => {
+  configureDelivery();
+  process.env.GOOGLE_APPS_SCRIPT_URL = 'https://example.com/not-allowed';
+  assert.equal((await POST(request())).status, 503);
+  process.env.GOOGLE_APPS_SCRIPT_URL =
+    'https://script.google.com/macros/s/test-deployment_123/exec';
+  process.env.GOOGLE_APPS_SCRIPT_SECRET = 'too-short';
   assert.equal((await POST(request())).status, 503);
 });

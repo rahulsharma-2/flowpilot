@@ -16,37 +16,34 @@ Visit http://localhost:3000. Empty configuration is supported: missing links are
 
 ## Configuration
 
-| Variable                          | Purpose                                                                    |
-| --------------------------------- | -------------------------------------------------------------------------- |
-| `SITE_URL`                        | Actual HTTPS production domain; enables canonical URLs and sitemap entries |
-| `WHATSAPP_CLOUD_ACCESS_TOKEN`     | Server-only Meta WhatsApp Cloud API access token                           |
-| `WHATSAPP_CLOUD_PHONE_NUMBER_ID`  | Numeric Meta sender phone-number ID, not the visible phone number          |
-| `WHATSAPP_NOTIFICATION_RECIPIENT` | Alert recipient in international digits, without `+` or spaces             |
-| `WHATSAPP_TEMPLATE_NAME`          | Approved Meta template name, for example `new_flowpilot_enquiry`           |
-| `WHATSAPP_TEMPLATE_LANGUAGE`      | Approved template language; defaults to `en_US`                            |
-| `WHATSAPP_GRAPH_API_VERSION`      | Meta Graph API version; defaults to `v27.0`                                |
-| `CONTACT_EMAIL`                   | Real public email; shown only if valid                                     |
-| `WHATSAPP_NUMBER`                 | Public click-to-chat number in international digits                        |
-| `LINKEDIN_URL`                    | Actual HTTPS LinkedIn profile/company URL                                  |
+| Variable                    | Purpose                                                                    |
+| --------------------------- | -------------------------------------------------------------------------- |
+| `SITE_URL`                  | Actual HTTPS production domain; enables canonical URLs and sitemap entries |
+| `GOOGLE_APPS_SCRIPT_URL`    | Server-only `/exec` URL for the deployed bound Apps Script web app         |
+| `GOOGLE_APPS_SCRIPT_SECRET` | Shared secret of 32–256 characters stored in Apps Script properties        |
+| `CONTACT_EMAIL`             | Real public email; shown only if valid                                     |
+| `WHATSAPP_NUMBER`           | Public click-to-chat number in international digits                        |
+| `LINKEDIN_URL`              | Actual HTTPS LinkedIn profile/company URL                                  |
 
-Never prefix secrets with `NEXT_PUBLIC_`. Restart development after changing environment variables. `.env*` is ignored except the empty `.env.example`. Public contact values are deliberately rendered as links; WhatsApp Cloud credentials stay on the server. Never commit real secrets or put them in Sonar properties.
+Never prefix secrets with `NEXT_PUBLIC_`. Restart development after changing environment variables. `.env*` is ignored except the empty `.env.example`. Public contact values are deliberately rendered as links; the Apps Script URL and shared secret stay on the server. Never commit real secrets or put them in Sonar properties.
 
 ## Contact contract
 
-Browser → same-origin `POST /api/contact` → Meta WhatsApp Cloud API. JSON input: `name`, `email`, `service` (`websites`, `automation`, `integrations`, `unsure`), `description`, `submissionId` (UUID v4), and hidden `website` honeypot. The server validates types, size and fields, checks Origin, rejects honeypot entries, imposes a 10-second upstream timeout, and refuses redirects. It maps the visible fields to four approved template parameters; descriptions are whitespace-normalised and capped at 600 characters so the notification remains deliverable. The honeypot and submission ID are never sent to Meta. No personal data or credentials are logged by application code.
+Browser → same-origin `POST /api/contact` → Google Apps Script web app → Google Sheet and notification email. JSON input: `name`, `email`, `service` (`websites`, `automation`, `integrations`, `unsure`), `description`, `submissionId` (UUID v4), and hidden `website` honeypot. The server validates types, size and fields, checks Origin, rejects honeypot entries and imposes a 10-second upstream timeout. It follows the redirect produced by Google Apps Script and accepts success only when the final JSON response contains `{ "ok": true }`. No personal data or credentials are logged by application code.
 
-The route returns JSON `{message, errors?}` with 200 when Meta accepts the message request; 400 invalid input, 403 origin mismatch, 413 oversized payload, 415 unsupported content type, 503 missing/invalid configuration and 502 unconfirmed API acceptance. API acceptance does not guarantee final device delivery; delivery-status webhooks are not part of this first version. Missing configuration never simulates success. No automatic retries occur. The button locks during submission and after success. The submission ID survives client retries while the form remains mounted, but without durable storage the site cannot guarantee exactly-once delivery. Add hosting/WAF rate limits before a broader launch; in-memory counters are intentionally avoided in serverless environments.
+The route returns JSON `{message, errors?}` with 200 when Apps Script confirms both storage and notification; 400 invalid input, 403 origin mismatch, 413 oversized payload, 415 unsupported content type, 503 missing/invalid configuration and 502 unconfirmed delivery. Missing configuration never simulates success. No automatic retries occur. The button locks during submission and after success. The submission ID survives client retries while the form remains mounted. Apps Script uses that ID and a script lock to prevent accidental duplicate rows and notifications. Add hosting/WAF rate limits before a broader launch; in-memory counters are intentionally avoided in serverless environments.
 
-The approved template must contain four body variables in this order: lead name, email, service and project description. A suitable template body is:
+## Google Apps Script setup
 
-```text
-New FlowPilot enquiry
+Use the Google account that owns the destination Sheet and should authorize outgoing notification emails.
 
-Name: {{1}}
-Email: {{2}}
-Service: {{3}}
-Project: {{4}}
-```
+1. Create or open a Google Sheet, then choose **Extensions → Apps Script**.
+2. Replace the default editor content with `integrations/google-apps-script/Code.gs`.
+3. Open **Project Settings → Script properties** and add `FLOWPILOT_SHARED_SECRET` with the same strong value configured as `GOOGLE_APPS_SCRIPT_SECRET` on the site.
+4. Choose **Deploy → New deployment → Web app**. Execute as **Me** and allow access to **Anyone** so the server can submit without a Google login. Authorize the requested Sheets and email permissions.
+5. Copy the final URL ending in `/exec` into `GOOGLE_APPS_SCRIPT_URL`, then redeploy the website so the new runtime environment revision is applied.
+
+The script creates a focused `Enquiries` sheet with received time, contact details, service, description, submission ID and notification status. It sends a plain-text notification to `flowpilotautomation19@gmail.com`, sets Reply-To to the lead’s address, serializes concurrent submissions and neutralizes spreadsheet-formula prefixes before writing user input. The shared secret is application authentication, not visitor authentication; keep the endpoint and secret out of client code and source control.
 
 ## Checks
 
@@ -56,13 +53,13 @@ npm run test:coverage
 npm run build
 ```
 
-Focused tests cover the validation boundary and mocked WhatsApp API success/failure paths. `sonar-project.properties` supplies sources, tests and LCOV configuration. Run coverage first, then your installed SonarScanner using `SONAR_HOST_URL` and `SONAR_TOKEN` supplied securely by CI. For SonarCloud, supply the real organisation/project settings. A Sonar server is not connected and no analysis result is claimed. See AGENTS.md for canonical coding conventions; CODEX.md points contributors to the same policies.
+Focused tests cover the validation boundary and mocked Apps Script success/failure paths. `sonar-project.properties` supplies sources, tests and LCOV configuration. Run coverage first, then your installed SonarScanner using `SONAR_HOST_URL` and `SONAR_TOKEN` supplied securely by CI. For SonarCloud, supply the real organisation/project settings. A Sonar server is not connected and no analysis result is claimed. See AGENTS.md for canonical coding conventions; CODEX.md points contributors to the same policies.
 
 ## Deployment (Vercel)
 
 Import this repository into Vercel, select Next.js, and use the default build (`npm run build`). Configure real environment variables in project settings, then deploy. No static export: `/api/contact` needs a server runtime. Other Node-compatible Next.js hosting works using `npm run build` followed by `npm start`. No database or authentication is required.
 
-Before enabling enquiries: verify the recipient, approve the exact four-variable WhatsApp utility template, configure a long-lived server-side access token and phone-number ID, test an actual submission end to end, and replace the privacy launch information with the legal business identity, actual processors, retention periods and a real privacy contact. Supply email, social links, WhatsApp and domain where desired. No analytics, client result, or testimonial is assumed.
+Before enabling enquiries: deploy and authorize the bound Apps Script, configure its server-only `/exec` URL and shared secret, test an actual submission end to end, and replace the privacy launch information with the legal business identity, actual processors, retention periods and a real privacy contact. Supply email, social links, WhatsApp and domain where desired. No analytics, client result, or testimonial is assumed.
 
 ## Formatting and build compatibility
 

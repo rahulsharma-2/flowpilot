@@ -1,5 +1,6 @@
 node_modules
 .next
 coverage
+integrations/google-apps-script/Code.gs
 package-lock.json
 next-env.d.ts

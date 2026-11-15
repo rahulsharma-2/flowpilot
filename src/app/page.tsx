@@ -4,7 +4,7 @@ import { Workflow } from '@/components/workflow';
 import { ContactForm } from '@/components/contact-form';
 import { BRAND, SERVICES, SOCIAL_LINKS, getPublicContact } from '@/lib/config';
 import { FAQS, PROCESS, PROJECTS } from '@/lib/content';
-import { isWhatsAppConfigured } from '@/lib/whatsapp';
+import { isGoogleAppsScriptConfigured } from '@/lib/google-apps-script';
 export const dynamic = 'force-dynamic';
 export default function Home() {
   const contact = getPublicContact();
@@ -297,7 +297,7 @@ export default function Home() {
               </div>
             </div>
             <ContactForm
-              enabled={isWhatsAppConfigured()}
+              enabled={isGoogleAppsScriptConfigured()}
               email={contact.email}
             />
           </div>

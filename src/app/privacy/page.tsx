@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Brand } from '@/components/brand';
 import { getPublicContact } from '@/lib/config';
-import { isWhatsAppConfigured } from '@/lib/whatsapp';
+import { isGoogleAppsScriptConfigured } from '@/lib/google-apps-script';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Privacy',
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 export default function Privacy() {
   const { email } = getPublicContact();
-  const enquiriesEnabled = isWhatsAppConfigured();
+  const enquiriesEnabled = isGoogleAppsScriptConfigured();
   return (
     <>
       <header className="container privacy-nav">
@@ -33,10 +33,11 @@ export default function Privacy() {
         </p>
         <h2>How it is used</h2>
         <p>
-          When online enquiries are enabled, submissions are sent through
-          Meta&apos;s WhatsApp Business Platform to our internal business
-          contact so we can review and respond to your request. We do not
-          automatically add you to a marketing list.
+          When online enquiries are enabled, submissions pass through our server
+          to a private Google Sheet and generate an email notification for our
+          internal business contact. We use this information to review and
+          respond to your request. We do not automatically add you to a
+          marketing list.
         </p>
         <h2>Website operations</h2>
         <p>
@@ -44,7 +45,8 @@ export default function Privacy() {
           non-essential cookies. Your light/dark theme preference is stored
           locally in your browser and is not sent to us. The hosting provider
           may process technical request information, such as IP addresses, as
-          part of operating and securing the website. External links, including
+          part of operating and securing the website. Google processes enquiry
+          data on our behalf when the form is enabled. External links, including
           WhatsApp and LinkedIn when available, are subject to those providers’
           privacy policies.
         </p>
@@ -66,8 +68,8 @@ export default function Privacy() {
         <h2>Launch information</h2>
         <p>
           {enquiriesEnabled
-            ? 'Online enquiry notifications are enabled through the WhatsApp Business Platform. This notice still needs the legal business identity, a working privacy contact, and final retention details before a broader commercial launch.'
-            : 'Online enquiry processing remains disabled until the WhatsApp Business Platform is configured. Before enabling it, this notice must include the legal business identity, a working privacy contact, and final retention details.'}
+            ? 'Online enquiry storage and email notifications are enabled through Google Apps Script. This notice still needs the legal business identity and final retention details before a broader commercial launch.'
+            : 'Online enquiry processing remains disabled until Google Apps Script is configured. Before enabling it, this notice must include the legal business identity, a working privacy contact, and final retention details.'}
         </p>
         <p>
           <Link href="/">← Back to FlowPilot</Link>

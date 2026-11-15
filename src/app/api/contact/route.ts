@@ -1,6 +1,9 @@
 import { CONTACT_LIMITS } from '@/lib/config';
 import { validateContact } from '@/lib/contact';
-import { isWhatsAppConfigured, sendEnquiryToWhatsApp } from '@/lib/whatsapp';
+import {
+  deliverEnquiry,
+  isGoogleAppsScriptConfigured,
+} from '@/lib/google-apps-script';
 export const runtime = 'nodejs';
 const respond = (message: string, status: number, extra = {}) =>
   Response.json({ message, ...extra }, { status });
@@ -34,10 +37,10 @@ export async function POST(request: Request) {
   if (!data)
     return respond('Please check the highlighted fields.', 400, { errors });
   if (data.website) return respond('Unable to accept this submission.', 400);
-  if (!isWhatsAppConfigured())
+  if (!isGoogleAppsScriptConfigured())
     return respond('Online enquiries are not connected yet.', 503);
   try {
-    const delivered = await sendEnquiryToWhatsApp(data);
+    const delivered = await deliverEnquiry(data);
     if (!delivered)
       return respond(
         'We could not confirm delivery. Please try again later or contact us directly.',
